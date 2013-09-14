@@ -1,0 +1,29 @@
+﻿Build started 9/10/2013 5:19:29 PM.
+     1>Project "C:\Users\dougl_000\Documents\Visual Studio 2010\Projects\VideoEnDecode\VideoEnDecode\VideoEnDecode.vcxproj" on node 2 (build target(s)).
+     1>InitializeBuildStatus:
+         Creating "Debug\VideoEnDecode.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /AI"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /Zi /clr /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /EHa /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc100.pdb" /TP /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.Core.dll" /analyze- /errorReport:prompt VideoEnDecode.cpp /clr:nostdlib 
+         VideoEnDecode.cpp
+         All outputs are up-to-date.
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\dougl_000\Documents\Visual Studio 2010\Projects\VideoEnDecode\Debug\VideoEnDecode.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:"Debug\VideoEnDecode.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"C:\Users\dougl_000\Documents\Visual Studio 2010\Projects\VideoEnDecode\Debug\VideoEnDecode.pdb" /ASSEMBLYDEBUG /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /FIXED:NO /NXCOMPAT /MACHINE:X86 Debug\stdafx.obj
+         Debug\VideoEnDecode.obj
+         "Debug\.NETFramework,Version=v4.0.AssemblyAttributes.obj"
+     1>VideoEnDecode.obj : warning LNK4248: unresolved typeref token (0100001C) for '_GstBufferList'; image may not run
+     1>VideoEnDecode.obj : warning LNK4248: unresolved typeref token (0100001D) for '_GstBufferListIterator'; image may not run
+     1>VideoEnDecode.obj : warning LNK4248: unresolved typeref token (01000023) for '_GMainLoop'; image may not run
+     1>VideoEnDecode.obj : warning LNK4248: unresolved typeref token (01000028) for '_GMainContext'; image may not run
+         VideoEnDecode.vcxproj -> C:\Users\dougl_000\Documents\Visual Studio 2010\Projects\VideoEnDecode\Debug\VideoEnDecode.exe
+       Manifest:
+         C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /outputresource:"C:\Users\dougl_000\Documents\Visual Studio 2010\Projects\VideoEnDecode\Debug\VideoEnDecode.exe;#1" /manifest Debug\VideoEnDecode.exe.intermediate.manifest
+       FinalizeBuildStatus:
+         Deleting file "Debug\VideoEnDecode.unsuccessfulbuild".
+         Touching "Debug\VideoEnDecode.lastbuildstate".
+     1>Done Building Project "C:\Users\dougl_000\Documents\Visual Studio 2010\Projects\VideoEnDecode\VideoEnDecode\VideoEnDecode.vcxproj" (build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:01.70
