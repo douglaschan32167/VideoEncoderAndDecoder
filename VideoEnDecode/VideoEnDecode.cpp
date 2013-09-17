@@ -222,14 +222,32 @@ unsigned int VideoEncoder::encode() {
 	return 0;
 }
 
-VideoEncoder::Decode() {
+unsigned int VideoEncoder::decode() {
 	App *app = &decode_app;
 	GError *error = NULL;
 	GstElement *decode_pipeline, *appsrc, *mp4decoder, *ffmpegcolorspace, *autovideosink;
 	gst_init(NULL, NULL);
-	decode_app->loop = g_main_loop_new(NULL, TRUE);
+	app->loop = g_main_loop_new(NULL, TRUE);
 	app->timer = g_timer_new();
+
 	decode_pipeline = gst_pipeline_new("decode_pipeline");
+	appsrc = gst_element_factory_make("autovideosrc", "appsrc"); //TODO: Change this to appsrc.
+	ffmpegcolorspace = gst_element_factory_make("ffmpegcolorspace", "ffmpegcolorspace");
+	autovideosink = gst_element_factory_make("autovideosink", "autovideosink");
+
+	gst_bin_add_many((GstBin *) decode_pipeline, appsrc, ffmpegcolorspace, autovideosink, NULL);
+	if (! gst_element_link_many(appsrc, ffmpegcolorspace, autovideosink, NULL)) {
+		cout << "could not link decode elements" << endl;
+		Sleep(1000);
+		return 1;
+	}
+	
+	gst_element_set_state (decode_pipeline, GST_STATE_PLAYING);
+	if (!decode_pipeline) {
+		fprintf (stderr, "Parse error: %s\n", error->message);
+		 exit(1);
+	}
+	while(1){};
 	return 1;
 }
 
@@ -251,7 +269,9 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	//is the error because the video buffer is defined here?
 	VideoBuffer *test = new VideoBuffer();
-	HANDLE thread = (HANDLE)::_beginthreadex(NULL, 0, encode_task, test, 0, NULL);
+	VideoEncoder ve(test);
+	ve.decode();
+	//HANDLE thread = (HANDLE)::_beginthreadex(NULL, 0, encode_task, test, 0, NULL);
 	cout << "hi" << endl;
 	Sleep(1000);
 	while(1) {};
