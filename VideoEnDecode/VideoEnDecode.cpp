@@ -22,7 +22,8 @@
 using namespace std;
 using namespace System;
 
-
+const int WIDTH = 640;
+const int HEIGHT = 480;
 
 static void print_structure(const GstStructure *structure, const char *title, const char *type_name) {
 	if(structure)
@@ -79,27 +80,33 @@ static GstFlowReturn new_preroll (GstAppSink *sink, gpointer user_data) {
 	}
 	return GST_FLOW_OK;
 }
-// when the appsink output one new frame, new_buffer() is called
+// when the appsink outputs one new frame, new_buffer() is called
 static GstFlowReturn new_buffer(GstAppSink *sink, gpointer user_data) {
 	GstBuffer *buffer =  gst_app_sink_pull_buffer (sink);
 	if (buffer) {
-		print_buffer(buffer, "buffer");
+		print_buffer(buffer, "buffer");//should I make rbuffer->buffer a GstBuffer?
 
 		VideoBuffer *rbuffer = reinterpret_cast< VideoBuffer * >(user_data);
-		unsigned char *buf = reinterpret_cast< unsigned char * >(buffer->data);
-		rbuffer->SetBuffer(buf, buffer->size);
+		//unsigned char *buf = reinterpret_cast< unsigned char * >(buffer->data);
+		rbuffer->SetBuffer(buffer, buffer->size);
 	}
 	return GST_FLOW_OK;
 }
 
 
 VideoBuffer::VideoBuffer()
-	: buffer(new unsigned char[sizeof(char) * 8]),
-	size(0),
+	: //buffer(NULL),
+	//size(0),
 	running_proc(false),
 	updated(false)
   {
 	  ::InitializeCriticalSection(&critical_section);
+	  buffer = gst_buffer_new();
+	  gpointer buffer_data = g_malloc(WIDTH * HEIGHT * 3);
+	  GST_BUFFER_DATA(buffer) = (guint8*)buffer_data;
+	  GST_BUFFER_SIZE(buffer) = WIDTH * HEIGHT * 3;
+	  size = WIDTH * HEIGHT * 3;
+	  GST_BUFFER_FREE_FUNC(buffer) = ::g_free;
 	  cout << "Initialized Critical section" << endl;
   }
 
@@ -120,9 +127,9 @@ void VideoBuffer::UnlockBuffer() {
 	::LeaveCriticalSection(&critical_section);
 }
 
-void VideoBuffer::SetBuffer(unsigned char *new_buffer, size_t new_size) {
+void VideoBuffer::SetBuffer(GstBuffer *new_buffer, size_t new_size) {
 	LockBuffer();
-	if (new_size != size) {
+	/*if (new_size != size) {
 		if (buffer) {
 			delete[] buffer;
 		}
@@ -131,14 +138,14 @@ void VideoBuffer::SetBuffer(unsigned char *new_buffer, size_t new_size) {
 		size = new_size;
 	}
 	memset(buffer, size, 1);
-	memcpy_s(new_buffer, size, buffer, size);
+	memcpy_s(new_buffer, size, buffer, size);*/
+	buffer = new_buffer; // can I do this? I feel like something will go wrong here.
 	updated = true;
 	UnlockBuffer();
 }
 
 VideoEncoder::VideoEncoder(VideoBuffer *vid_buf) {
 	video_buffer = vid_buf;
-	cout << "creating video encoder" << endl;
 	//TODO: complete
 }
 
@@ -153,7 +160,6 @@ VideoEncoder::~VideoEncoder() {
 // Thread function to retrieve received data
 unsigned int _stdcall process_thread(void *lpvoid)
 {
-	//Error has to do with calling LockBuffer() inside here. so cast maybe?
 	unsigned char color[3];
 	VideoBuffer *vid_buffer = reinterpret_cast< VideoBuffer * >(lpvoid);
 	cout << "in process_thread" << endl;
@@ -175,7 +181,67 @@ unsigned int _stdcall process_thread(void *lpvoid)
 
 	return 0;
 }
+// Callback function for Appsrc to notify updating buffer
+static gboolean read_data (VideoBuffer * video_buffer, App *app) 
+{ 
+    GstFlowReturn ret; 
+    gdouble ms; 
+	cout <<"read_data" << endl;
+	if(video_buffer->finishing)
+	{
+		cout << "finishing" << endl;
+		::g_signal_emit_by_name (app->appsrc, "end-of-stream", &ret);
+		return FALSE;
+	}
+ 
+    ms = g_timer_elapsed(app->timer, NULL); 
+    if (ms > 1.0/20.0) { 
+		gboolean ok = TRUE;
 
+		video_buffer->LockBuffer();
+		unsigned char color[3];
+		::memcpy_s(color, sizeof(unsigned char)*3, video_buffer->buffer, sizeof(unsigned char)*3);
+		::g_printerr("Received data : [%d %d %d]\n", color[0], color[1], color[2]);
+		//cout << video_buffer->buffer << endl;
+		g_signal_emit_by_name (app->appsrc, "push-buffer", video_buffer->buffer, &ret);
+
+		video_buffer->UnlockBuffer();
+		
+		if (ret != GST_FLOW_OK)
+		{
+			/* some error, stop sending data */
+			ok = FALSE;
+		}
+        
+		::g_timer_start(app->timer); 
+ 
+        return ok; 
+    } 
+ 
+    return TRUE; 
+} 
+ 
+/* This signal callback is called when appsrc needs data, we add an idle handler 
+* to the mainloop to start pushing data into the appsrc */ 
+static void start_feed (GstElement * pipeline, guint size, VideoBuffer * app) 
+{ 
+
+  if (app->source_id == 0) { 
+	printf("start feed");
+    app->source_id = g_idle_add ((GSourceFunc) read_data, app);
+	cout << app->source_id << endl;
+  } 
+} 
+ 
+/* This callback is called when appsrc has enough data and we can stop sending. 
+* We remove the idle handler from the mainloop */ 
+static void stop_feed (GstElement * pipeline, VideoBuffer * app) 
+{ 
+  if (app->source_id != 0) { 
+    g_source_remove (app->source_id); 
+    app->source_id = 0; 
+  } 
+} 
 
 unsigned int VideoEncoder::encode() {
 
@@ -216,7 +282,7 @@ unsigned int VideoEncoder::encode() {
 	}
 	g_main_loop_run(app->loop);
 	// Finish thread
-	video_buffer->running_proc = false;
+	video_buffer->running_proc = false; //comment out for more info.
 	::WaitForSingleObject(thread, INFINITE);
 	while(1) {};
 	return 0;
@@ -268,6 +334,7 @@ unsigned int _stdcall decode_task(void *video_buffer) {
 int _tmain(int argc, _TCHAR* argv[])
 {
 	//is the error because the video buffer is defined here?
+	gst_init(NULL, NULL);
 	VideoBuffer *test = new VideoBuffer();
 	VideoEncoder ve(test);
 	ve.decode();

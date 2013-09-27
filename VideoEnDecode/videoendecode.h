@@ -7,6 +7,7 @@ struct _App {
 	GstElement *pipeline;
 	GMainLoop *loop;
 	GTimer *timer;
+	GstElement *appsrc;
 };
 
 class VideoBuffer {
@@ -16,12 +17,15 @@ public:
 	~VideoBuffer();
 	void LockBuffer();
 	void UnlockBuffer();
-	void SetBuffer(unsigned char *new_buffer, size_t new_size);
+	void SetBuffer(GstBuffer *new_buffer, size_t new_size);
 
-	unsigned char *buffer;
+	//unsigned char *buffer;
+	GstBuffer *buffer;
 	unsigned int size;
 	bool running_proc;
 	bool updated;
+	bool finishing;
+	guint source_id;
 
 private:
 	CRITICAL_SECTION critical_section;
