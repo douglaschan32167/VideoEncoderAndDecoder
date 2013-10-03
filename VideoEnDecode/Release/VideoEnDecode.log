@@ -1,0 +1,33 @@
+﻿Build started 10/3/2013 1:21:22 PM.
+     1>Project "C:\Users\dougl_000\Documents\Visual Studio 2010\Projects\VideoEnDecode\VideoEnDecode\VideoEnDecode.vcxproj" on node 2 (build target(s)).
+     1>InitializeBuildStatus:
+         Creating "Release\VideoEnDecode.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       GenerateTargetFrameworkMonikerAttribute:
+       Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+       ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /AI"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /Zi /clr /nologo /W3 /WX- /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _CONSOLE /D _UNICODE /D UNICODE /EHa /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc100.pdb" /TP /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.Core.dll" /analyze- /errorReport:prompt VideoEnDecode.cpp /clr:nostdlib 
+         VideoEnDecode.cpp
+     1>VideoEnDecode.cpp(167): warning C4101: 'color' : unreferenced local variable
+     1>VideoEnDecode.cpp(346): warning C4101: 'appsrc' : unreferenced local variable
+         All outputs are up-to-date.
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\dougl_000\Documents\Visual Studio 2010\Projects\VideoEnDecode\Release\VideoEnDecode.exe" /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:"Release\VideoEnDecode.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"C:\Users\dougl_000\Documents\Visual Studio 2010\Projects\VideoEnDecode\Release\VideoEnDecode.pdb" /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /FIXED:NO /NXCOMPAT /MACHINE:X86 Release\stdafx.obj
+         Release\VideoEnDecode.obj
+         "Release\.NETFramework,Version=v4.0.AssemblyAttributes.obj"
+         LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
+     1>VideoEnDecode.obj : warning LNK4248: unresolved typeref token (0100001C) for '_GstBufferList'; image may not run
+     1>VideoEnDecode.obj : warning LNK4248: unresolved typeref token (0100001D) for '_GMainLoop'; image may not run
+     1>VideoEnDecode.obj : warning LNK4248: unresolved typeref token (0100001E) for '_GstBufferListIterator'; image may not run
+     1>VideoEnDecode.obj : warning LNK4248: unresolved typeref token (01000028) for '_GMainContext'; image may not run
+     1>VideoEnDecode.obj : warning LNK4248: unresolved typeref token (01000029) for '_GTimer'; image may not run
+         VideoEnDecode.vcxproj -> C:\Users\dougl_000\Documents\Visual Studio 2010\Projects\VideoEnDecode\Release\VideoEnDecode.exe
+       Manifest:
+         C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /outputresource:"C:\Users\dougl_000\Documents\Visual Studio 2010\Projects\VideoEnDecode\Release\VideoEnDecode.exe;#1" /manifest Release\VideoEnDecode.exe.intermediate.manifest
+       FinalizeBuildStatus:
+         Deleting file "Release\VideoEnDecode.unsuccessfulbuild".
+         Touching "Release\VideoEnDecode.lastbuildstate".
+     1>Done Building Project "C:\Users\dougl_000\Documents\Visual Studio 2010\Projects\VideoEnDecode\VideoEnDecode\VideoEnDecode.vcxproj" (build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:03.32

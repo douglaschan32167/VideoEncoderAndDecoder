@@ -7,7 +7,7 @@ struct _App {
 	GstElement *pipeline;
 	GMainLoop *loop;
 	GTimer *timer;
-	GstElement *appsrc;
+	//GstElement *appsrc;
 };
 
 class VideoBuffer {
@@ -26,6 +26,8 @@ public:
 	bool updated;
 	bool finishing;
 	guint source_id;
+	GstElement *appsrc;
+	GstCaps *caps;
 
 private:
 	CRITICAL_SECTION critical_section;
