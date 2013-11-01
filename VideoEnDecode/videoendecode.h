@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <gstreamer-0.10\gst\gst.h>
+#include <gst/app/gstappsink.h>
 
 typedef struct _App App;
 
@@ -18,6 +19,7 @@ public:
 	void LockBuffer();
 	void UnlockBuffer();
 	void SetBuffer(GstBuffer *new_buffer, size_t new_size);
+
 
 	//unsigned char *buffer;
 	GstBuffer *buffer;
@@ -41,8 +43,20 @@ public:
 	unsigned int decode();
 	App s_app, decode_app;
 
+	static GstFlowReturn new_buffer(GstAppSink *sink, gpointer user_data);
+	static GstFlowReturn new_buffer_list(GstAppSink *sink, gpointer user_data);
+	static GstFlowReturn new_preroll (GstAppSink *sink, gpointer user_data);
+	static gboolean read_data (VideoBuffer * video_buffer, App *app);
+	static void start_feed (GstElement * pipeline, guint size, VideoBuffer * app);
+	static void stop_feed (GstElement * pipeline, VideoBuffer * app);
+	static gboolean bus_message (GstBus * bus, GstMessage * message, _App * app);
+	static void print_structure(const GstStructure *structure, const char *title, const char *type_name);
+	static void print_buffer(GstBuffer *buffer, const char *type_name);
+
+
 private:
 	VideoBuffer *video_buffer;
+	bool init_called;
 };
 
 //TODO: Add VideoDecoder class

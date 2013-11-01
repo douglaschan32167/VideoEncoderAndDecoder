@@ -13,6 +13,8 @@
 #include "stdafx.h"
 #include "videoendecode.h"
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <Windows.h>
 #include <gstreamer-0.10\gst\gst.h>
 #include <gst/app/gstappsink.h>
@@ -22,11 +24,12 @@
 
 using namespace std;
 using namespace System;
+ofstream file ("packet_sizes.txt", ios::out);
 
 const int WIDTH = 640;
 const int HEIGHT = 480;
 
-static void print_structure(const GstStructure *structure, const char *title, const char *type_name) {
+void VideoEncoder::print_structure(const GstStructure *structure, const char *title, const char *type_name) {
 	if(structure)
 	{
 		::g_printerr("%s: %s[%s] ", title, type_name, ::gst_structure_get_name(structure));
@@ -43,7 +46,7 @@ static void print_structure(const GstStructure *structure, const char *title, co
 	::g_printerr("\n");
 }
 
-static void print_buffer(GstBuffer *buffer, const char *type_name) {
+void VideoEncoder::print_buffer(GstBuffer *buffer, const char *type_name) {
 	GstCaps *caps = ::gst_buffer_get_caps(buffer);
 
 	unsigned int sz = buffer->size;
@@ -59,7 +62,7 @@ static void print_buffer(GstBuffer *buffer, const char *type_name) {
 
 
 // Callback functions to AppSink
-static GstFlowReturn new_buffer_list(GstAppSink *sink, gpointer user_data) {
+GstFlowReturn VideoEncoder::new_buffer_list(GstAppSink *sink, gpointer user_data) {
 	GstBufferList *list = gst_app_sink_pull_buffer_list (sink);
 	GstBufferListIterator *it = gst_buffer_list_iterate (list);
 	GstBuffer *buffer;
@@ -71,7 +74,7 @@ static GstFlowReturn new_buffer_list(GstAppSink *sink, gpointer user_data) {
 	gst_buffer_list_iterator_free (it);
 	return GST_FLOW_OK;
 }
-static GstFlowReturn new_preroll (GstAppSink *sink, gpointer user_data) {
+GstFlowReturn VideoEncoder::new_preroll (GstAppSink *sink, gpointer user_data) {
 	GstBuffer *buffer =  gst_app_sink_pull_preroll (sink);
 	if (buffer) {
 		//print_buffer(buffer, "preroll");
@@ -81,21 +84,35 @@ static GstFlowReturn new_preroll (GstAppSink *sink, gpointer user_data) {
 	}
 	return GST_FLOW_OK;
 }
+
+// This method is only for collecting information to make a graph. Usually this will not be called.
+static void writeSizeToFile(size_t size) {
+	//ofstream file ("packet_sizes.txt", ios::out);
+	stringstream ss;
+	ss  << size;
+	file << ss.str();
+	file << "\t";
+	file << " ";
+	//file.close();
+
+}
 // when the appsink outputs one new frame, new_buffer() is called
-static GstFlowReturn new_buffer(GstAppSink *sink, gpointer user_data) {
+// is this running faster than decode? Is that why there is the delay?
+GstFlowReturn VideoEncoder::new_buffer(GstAppSink *sink, gpointer user_data) {
 	GstBuffer *buffer =  gst_app_sink_pull_buffer (sink);
-	if (buffer) {
+	if (buffer && buffer->size < 60000) {
 		//print_buffer(buffer, "buffer");//should I make rbuffer->buffer a GstBuffer?
 		//cout << "in new buffer" << endl;
 		VideoBuffer *rbuffer = reinterpret_cast< VideoBuffer * >(user_data);
 		//unsigned char *buf = reinterpret_cast< unsigned char * >(buffer->data);
 		rbuffer->SetBuffer(buffer, buffer->size);
+		//writeSizeToFile(buffer->size);
 		rbuffer->caps = buffer->caps;
 	}
 	return GST_FLOW_OK;
 }
 
-
+//Creator function for VideoBuffer. 
 VideoBuffer::VideoBuffer()
 	: //buffer(NULL),
 	//size(0),
@@ -121,7 +138,7 @@ VideoBuffer::~VideoBuffer() {
 }
 
 void VideoBuffer::LockBuffer() {
-	::EnterCriticalSection(&critical_section); // error occurs on this line. 
+	::EnterCriticalSection(&critical_section);
 }
 
 void VideoBuffer::UnlockBuffer() {
@@ -150,6 +167,7 @@ void VideoBuffer::SetBuffer(GstBuffer *new_buffer, size_t new_size) {
 
 VideoEncoder::VideoEncoder(VideoBuffer *vid_buf) {
 	video_buffer = vid_buf;
+	init_called = false;
 	//TODO: complete
 }
 
@@ -186,12 +204,9 @@ unsigned int _stdcall process_thread(void *lpvoid)
 	return 0;
 }
 // Callback function for Appsrc to notify updating buffer
-static gboolean read_data (VideoBuffer * video_buffer, App *app) 
+gboolean VideoEncoder::read_data (VideoBuffer * video_buffer, App *app) 
 { 
     GstFlowReturn ret; 
-    //gdouble ms; 
-	//cout <<"read_data";
-	//cout << (video_buffer->updated ? "updated" : "not updated") << endl;
 	if(video_buffer->finishing)
 	{
 		cout << "finishing" << endl;
@@ -231,7 +246,7 @@ static gboolean read_data (VideoBuffer * video_buffer, App *app)
  
 
 // Callback function to print bus message
-static gboolean bus_message (GstBus * bus, GstMessage * message, _App * app) 
+gboolean VideoEncoder::bus_message (GstBus * bus, GstMessage * message, _App * app) 
 {
 	cout << "bus message" << endl;
   GST_DEBUG ("got message %s", 
@@ -269,10 +284,12 @@ static gboolean bus_message (GstBus * bus, GstMessage * message, _App * app)
 		break; 
 	} 
 	return TRUE; 
-} 
+}
+
+
 /* This signal callback is called when appsrc needs data, we add an idle handler 
 * to the mainloop to start pushing data into the appsrc */ 
-static void start_feed (GstElement * pipeline, guint size, VideoBuffer * app) 
+void VideoEncoder::start_feed (GstElement * pipeline, guint size, VideoBuffer * app) 
 { 
 	cout << "in start feed" << endl;
   //if (app->source_id == 0) { 
@@ -284,7 +301,7 @@ static void start_feed (GstElement * pipeline, guint size, VideoBuffer * app)
  
 /* This callback is called when appsrc has enough data and we can stop sending. 
 * We remove the idle handler from the mainloop */ 
-static void stop_feed (GstElement * pipeline, VideoBuffer * app) 
+void VideoEncoder::stop_feed (GstElement * pipeline, VideoBuffer * app) 
 { 
   if (app->source_id != 0) { 
     g_source_remove (app->source_id); 
@@ -292,6 +309,7 @@ static void stop_feed (GstElement * pipeline, VideoBuffer * app)
   } 
 } 
 
+//The function that encodes the video data. 
 unsigned int VideoEncoder::encode() {
 
 	//TODO: complete and delete the test code above.
@@ -301,6 +319,7 @@ unsigned int VideoEncoder::encode() {
 	GError *error = NULL;
 	GstElement *encode_pipeline, *video_src, *ffmpegcolorspace, *mp4encoder, *ffmpegcolorspace2, *appsink;
 	gst_init(NULL, NULL);
+	init_called = true;
 	encode_pipeline = gst_pipeline_new("encode_pipeline");
 	app->pipeline = encode_pipeline;
 	app->loop = g_main_loop_new(NULL, TRUE);
@@ -339,7 +358,11 @@ unsigned int VideoEncoder::encode() {
 }
 
 unsigned int VideoEncoder::decode() {
-	Sleep(2000);
+//	while (!init_called) {
+//		Sleep(1200);
+//		cout << "waiting" << endl;
+//	}
+	Sleep(2300); // use SetEvent
 	GstBus *bus;
 	App *app = &decode_app;
 	GError *error = NULL;
