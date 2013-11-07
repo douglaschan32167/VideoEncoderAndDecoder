@@ -68,7 +68,7 @@ GstFlowReturn VideoEncoder::new_buffer_list(GstAppSink *sink, gpointer user_data
 	GstBuffer *buffer;
 	while (gst_buffer_list_iterator_next_group (it)) {
 		while ((buffer = gst_buffer_list_iterator_next (it)) != NULL) {
-			//print_buffer(buffer, "new_buffer_list");
+			print_buffer(buffer, "new_buffer_list");
 		}
 	}
 	gst_buffer_list_iterator_free (it);
@@ -100,9 +100,7 @@ static void writeSizeToFile(size_t size) {
 // is this running faster than decode? Is that why there is the delay?
 GstFlowReturn VideoEncoder::new_buffer(GstAppSink *sink, gpointer user_data) {
 	GstBuffer *buffer =  gst_app_sink_pull_buffer (sink);
-	if (buffer && buffer->size < 60000) {
-		//print_buffer(buffer, "buffer");//should I make rbuffer->buffer a GstBuffer?
-		//cout << "in new buffer" << endl;
+	if (buffer) { // && buffer->size < 60000) {
 		VideoBuffer *rbuffer = reinterpret_cast< VideoBuffer * >(user_data);
 		//unsigned char *buf = reinterpret_cast< unsigned char * >(buffer->data);
 		rbuffer->SetBuffer(buffer, buffer->size);
@@ -165,9 +163,9 @@ void VideoBuffer::SetBuffer(GstBuffer *new_buffer, size_t new_size) {
 	UnlockBuffer();
 }
 
-VideoEncoder::VideoEncoder(VideoBuffer *vid_buf) {
+VideoEncoder::VideoEncoder(VideoBuffer *vid_buf, VideoBuffer *rgb_buf) {
 	video_buffer = vid_buf;
-	init_called = false;
+	rgb_buffer = rgb_buf;
 	//TODO: complete
 }
 
@@ -179,7 +177,9 @@ VideoEncoder::~VideoEncoder() {
 	//TODO: complete
 }
 
-// Thread function to retrieve received data
+// This function is just for debugging. What it does is it prints out three bytes from the received data. However,
+// I took out the part that calls this. I will just use this for debugging.
+// TODO: Remove this function.
 unsigned int _stdcall process_thread(void *lpvoid)
 {
 	unsigned char color[3];
@@ -319,7 +319,6 @@ unsigned int VideoEncoder::encode() {
 	GError *error = NULL;
 	GstElement *encode_pipeline, *video_src, *ffmpegcolorspace, *mp4encoder, *ffmpegcolorspace2, *appsink;
 	gst_init(NULL, NULL);
-	init_called = true;
 	encode_pipeline = gst_pipeline_new("encode_pipeline");
 	app->pipeline = encode_pipeline;
 	app->loop = g_main_loop_new(NULL, TRUE);
@@ -340,7 +339,7 @@ unsigned int VideoEncoder::encode() {
 		exit(1);
 	}
 
-	video_buffer->caps = gst_app_sink_get_caps((GstAppSink *) appsink);
+	video_buffer->caps = gst_app_sink_get_caps((GstAppSink *) appsink);// here?
 	video_buffer->running_proc = true;
 	//HANDLE thread = (HANDLE)::_beginthreadex(NULL, 0, process_thread, video_buffer, 0, NULL);
 	cout << "set to playing" << endl;
@@ -358,10 +357,6 @@ unsigned int VideoEncoder::encode() {
 }
 
 unsigned int VideoEncoder::decode() {
-//	while (!init_called) {
-//		Sleep(1200);
-//		cout << "waiting" << endl;
-//	}
 	Sleep(2300); // use SetEvent
 	GstBus *bus;
 	App *app = &decode_app;
@@ -373,12 +368,10 @@ unsigned int VideoEncoder::decode() {
 
 	decode_pipeline = gst_pipeline_new("decode_pipeline");
 	app->pipeline = decode_pipeline;
-	video_buffer->appsrc = gst_element_factory_make("appsrc", "appsrc"); //TODO: Change this to appsrc.
+	video_buffer->appsrc = gst_element_factory_make("appsrc", "appsrc");
 	ffmpegcolorspace = gst_element_factory_make("ffmpegcolorspace", "ffmpegcolorspace");
-	mp4decoder = gst_element_factory_make("ffdec_mpeg4", "mp4decoder");//ffdec_mpeg4
+	mp4decoder = gst_element_factory_make("ffdec_mpeg4", "mp4decoder");
 	autovideosink = gst_element_factory_make("autovideosink", "autovideosink");
-	//autovideosink = gst_element_factory_make("filesink", "autovideosink");
-	//autovideosink->setProperty("location", "test");
 
 		// Set bus message handler
 	bus = gst_pipeline_get_bus (GST_PIPELINE (app->pipeline)); 
@@ -412,28 +405,36 @@ unsigned int VideoEncoder::decode() {
 	return 1;
 }
 
-unsigned int _stdcall encode_task(void *video_buffer) {
-	VideoBuffer *vb = (VideoBuffer *) video_buffer;
-	VideoEncoder encoder(vb);
+unsigned int _stdcall encode_task(void *encode_params) {
+	_VideoEncoder_Params *vep = (_VideoEncoder_Params *) encode_params;
+	VideoBuffer *vb = vep->vid_buf_param;
+	VideoBuffer *rgb = vep->rgb_buf_param;
+	VideoEncoder encoder(vb, rgb);
 	encoder.encode();
 	return 1;
 }
 
-unsigned int _stdcall decode_task(void *video_buffer) {
+unsigned int _stdcall decode_task(void *video_buffer, void *rgb_buffer) {
 	VideoBuffer *vb = (VideoBuffer *) video_buffer;
-	VideoEncoder decoder(vb);
+	VideoBuffer *rgb = (VideoBuffer *) rgb_buffer;
+	VideoEncoder decoder(vb, rgb);
 	decoder.decode();
 	return 0;
 }
+
+_VideoEncoder_Params vep2; // This is only used for the main function in calling the demo, so I'm just putting it here
 
 int _tmain(int argc, _TCHAR* argv[])
 {
 	//is the error because the video buffer is defined here?
 	gst_init(NULL, NULL);
 	VideoBuffer *test = new VideoBuffer();
-	VideoEncoder ve(test);
+	VideoBuffer *test_rgb = new VideoBuffer();
+	VideoEncoder ve(test, test_rgb);
+	vep2.vid_buf_param = test;
+	vep2.rgb_buf_param = test_rgb;
 
-	HANDLE thread = (HANDLE)::_beginthreadex(NULL, 0, encode_task, test, 0, NULL);
+	HANDLE thread = (HANDLE)::_beginthreadex(NULL, 0, encode_task,  &vep2, 0, NULL);
 	ve.decode();
 	Sleep(1000);
 	while(1) {

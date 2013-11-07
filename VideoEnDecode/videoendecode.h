@@ -11,6 +11,8 @@ struct _App {
 	//GstElement *appsrc;
 };
 
+
+
 class VideoBuffer {
 public: 
 
@@ -37,7 +39,7 @@ private:
 
 class VideoEncoder {
 public:
-	VideoEncoder(VideoBuffer *vid_buf);
+	VideoEncoder(VideoBuffer *vid_buf, VideoBuffer *rgb_buf);
 	~VideoEncoder();
 	unsigned int encode();
 	unsigned int decode();
@@ -56,7 +58,12 @@ public:
 
 private:
 	VideoBuffer *video_buffer;
-	bool init_called;
+	VideoBuffer *rgb_buffer;
+};
+
+struct _VideoEncoder_Params {
+	VideoBuffer *vid_buf_param;
+	VideoBuffer *rgb_buf_param;
 };
 
 //TODO: Add VideoDecoder class
