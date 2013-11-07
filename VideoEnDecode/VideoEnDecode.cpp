@@ -116,7 +116,8 @@ VideoBuffer::VideoBuffer()
 	//size(0),
 	running_proc(false),
 	updated(false),
-	finishing(false)
+	finishing(false),
+	source_id(0)
   {
 	  ::InitializeCriticalSection(&critical_section);
 	  buffer = gst_buffer_new();
@@ -204,7 +205,7 @@ unsigned int _stdcall process_thread(void *lpvoid)
 	return 0;
 }
 // Callback function for Appsrc to notify updating buffer
-gboolean VideoEncoder::read_data (VideoBuffer * video_buffer, App *app) 
+gboolean VideoEncoder::read_data (VideoBuffer * video_buffer) 
 { 
     GstFlowReturn ret; 
 	if(video_buffer->finishing)
@@ -289,14 +290,14 @@ gboolean VideoEncoder::bus_message (GstBus * bus, GstMessage * message, _App * a
 
 /* This signal callback is called when appsrc needs data, we add an idle handler 
 * to the mainloop to start pushing data into the appsrc */ 
-void VideoEncoder::start_feed (GstElement * pipeline, guint size, VideoBuffer * app) 
+void VideoEncoder::start_feed (GstElement * pipeline, guint size, VideoBuffer *vid_buf) 
 { 
 	cout << "in start feed" << endl;
-  //if (app->source_id == 0) { 
+  if (vid_buf->source_id == 0) { 
 	printf("start feed");
-    app->source_id = g_idle_add ((GSourceFunc) read_data, app);
-	cout << app->source_id << endl;
-  //} 
+    vid_buf->source_id = g_idle_add ((GSourceFunc) read_data, vid_buf);
+	cout << vid_buf->source_id << endl;
+  } 
 } 
  
 /* This callback is called when appsrc has enough data and we can stop sending. 

@@ -48,7 +48,7 @@ public:
 	static GstFlowReturn new_buffer(GstAppSink *sink, gpointer user_data);
 	static GstFlowReturn new_buffer_list(GstAppSink *sink, gpointer user_data);
 	static GstFlowReturn new_preroll (GstAppSink *sink, gpointer user_data);
-	static gboolean read_data (VideoBuffer * video_buffer, App *app);
+	static gboolean read_data (VideoBuffer * video_buffer);
 	static void start_feed (GstElement * pipeline, guint size, VideoBuffer * app);
 	static void stop_feed (GstElement * pipeline, VideoBuffer * app);
 	static gboolean bus_message (GstBus * bus, GstMessage * message, _App * app);
